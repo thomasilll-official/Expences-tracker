@@ -1,0 +1,1043 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Hisab - Monthly Expense Tracker</title>
+  <style>
+    @import url("https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap");
+
+    :root {
+      --bg: #eef2ff;
+      --bg-accent: #dbeafe;
+      --card: rgba(255, 255, 255, 0.88);
+      --text: #0f172a;
+      --muted: #64748b;
+      --primary: #4f46e5;
+      --primary-dark: #4338ca;
+      --secondary: #06b6d4;
+      --danger: #ef4444;
+      --warning: #f59e0b;
+      --border: #dbe4ff;
+      --shadow: 0 12px 28px rgba(79, 70, 229, 0.12);
+      --radius: 14px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: "Poppins", Arial, Helvetica, sans-serif;
+    }
+
+    body {
+      background: linear-gradient(120deg, var(--bg) 0%, var(--bg-accent) 100%);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 24px 14px 40px;
+      animation: fadeBody 0.7s ease;
+    }
+
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      text-align: center;
+      margin-bottom: 6px;
+      font-size: 2rem;
+      letter-spacing: 0.2px;
+    }
+
+    .subtitle {
+      text-align: center;
+      color: var(--muted);
+      margin-bottom: 20px;
+    }
+
+    .clock {
+      text-align: center;
+      margin-bottom: 20px;
+      color: #1e293b;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+    }
+
+    .grid {
+      display: grid;
+      gap: 16px;
+    }
+
+    .grid-2 {
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(6px);
+      transition: transform 0.25s ease, box-shadow 0.25s ease;
+      animation: slideUp 0.45s ease;
+    }
+
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 16px 34px rgba(79, 70, 229, 0.17);
+    }
+
+    .card h2 {
+      font-size: 1.1rem;
+      margin-bottom: 12px;
+    }
+
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 10px;
+    }
+
+    .full {
+      grid-column: 1 / -1;
+    }
+
+    label {
+      font-size: 0.85rem;
+      color: #374151;
+      margin-bottom: 4px;
+      display: inline-block;
+    }
+
+    input,
+    select,
+    button {
+      width: 100%;
+      padding: 10px 11px;
+      border: 1px solid #cbd5e1;
+      border-radius: 8px;
+      outline: none;
+      font-size: 0.95rem;
+      transition: box-shadow 0.2s ease, border-color 0.2s ease, transform 0.15s ease;
+    }
+
+    input:focus,
+    select:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.14);
+      transform: translateY(-1px);
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--primary), var(--secondary));
+      color: #fff;
+      border: none;
+      cursor: pointer;
+      font-weight: 600;
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+    }
+
+    .btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 8px 18px rgba(79, 70, 229, 0.28);
+    }
+
+    .btn-secondary {
+      background: linear-gradient(135deg, #64748b, #334155);
+    }
+
+    .btn-warning {
+      background: linear-gradient(135deg, var(--warning), #d97706);
+    }
+
+    .btn-secondary:hover,
+    .btn-warning:hover {
+      box-shadow: 0 8px 18px rgba(51, 65, 85, 0.2);
+    }
+
+    .btn-danger {
+      background: var(--danger);
+      color: #fff;
+      border: none;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      width: auto;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn-danger:hover {
+      transform: translateY(-1px);
+      opacity: 0.94;
+    }
+
+    .action-btn {
+      border: none;
+      color: #fff;
+      padding: 6px 8px;
+      font-size: 0.8rem;
+      border-radius: 6px;
+      cursor: pointer;
+      width: auto;
+      transition: transform 0.2s ease, opacity 0.2s ease;
+    }
+
+    .btn-edit {
+      background: #0ea5e9;
+      margin-right: 6px;
+    }
+
+    .action-btn:hover {
+      transform: translateY(-1px);
+      opacity: 0.94;
+    }
+
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      margin-top: 4px;
+    }
+
+    .stat-box {
+      border: 1px dashed #cbd5e1;
+      border-radius: 10px;
+      padding: 10px;
+      background: #f8fbff;
+    }
+
+    .stat-title {
+      font-size: 0.8rem;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+
+    .stat-value {
+      font-size: 1.05rem;
+      font-weight: 700;
+    }
+
+    .table-wrap {
+      overflow-x: auto;
+      margin-top: 12px;
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      background: #fff;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      min-width: 760px;
+      background: #fff;
+    }
+
+    th,
+    td {
+      border-bottom: 1px solid #edf1f7;
+      padding: 10px 9px;
+      text-align: left;
+      font-size: 0.9rem;
+    }
+
+    th {
+      background: #f3f7ff;
+      color: #111827;
+      position: sticky;
+      top: 0;
+      z-index: 1;
+    }
+
+    .right {
+      text-align: right;
+    }
+
+    .empty {
+      text-align: center;
+      color: var(--muted);
+      padding: 20px;
+    }
+
+    .category-list {
+      list-style: none;
+      margin-top: 10px;
+      max-height: 350px;
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .category-list li {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      padding: 10px 8px;
+      border-bottom: 1px solid #edf1f7;
+      font-size: 0.92rem;
+      animation: fadeInRow 0.22s ease;
+    }
+
+    .muted {
+      color: var(--muted);
+      font-size: 0.86rem;
+    }
+
+    .month-filter {
+      display: grid;
+      grid-template-columns: 1fr 1fr auto;
+      gap: 10px;
+      align-items: end;
+    }
+
+    .month-actions {
+      display: flex;
+      gap: 10px;
+      margin-top: 10px;
+      flex-wrap: wrap;
+    }
+
+    .form-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+
+    .backup-actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-top: 10px;
+      max-width: 420px;
+    }
+
+    .tag-edit {
+      display: none;
+      margin-bottom: 10px;
+      font-size: 0.84rem;
+      background: #fff7ed;
+      border: 1px solid #fed7aa;
+      color: #9a3412;
+      border-radius: 8px;
+      padding: 7px 10px;
+    }
+
+    @media (max-width: 640px) {
+      .form-row,
+      .month-filter {
+        grid-template-columns: 1fr;
+      }
+
+      .month-actions {
+        flex-direction: column;
+      }
+
+      .backup-actions {
+        grid-template-columns: 1fr;
+        max-width: 100%;
+      }
+
+      h1 {
+        font-size: 1.6rem;
+      }
+
+      .subtitle {
+        font-size: 0.9rem;
+      }
+
+      table {
+        min-width: 620px;
+      }
+
+      th,
+      td {
+        font-size: 0.82rem;
+        padding: 8px 7px;
+      }
+    }
+
+    @keyframes slideUp {
+      from {
+        opacity: 0;
+        transform: translateY(12px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    @keyframes fadeBody {
+      from {
+        opacity: 0.4;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+
+    @keyframes fadeInRow {
+      from {
+        opacity: 0;
+      }
+      to {
+        opacity: 1;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Hisab Expense Tracker</h1>
+    <p class="subtitle">Enter daily debit expenses and get month-end category totals.</p>
+    <p class="subtitle" style="color: #4f46e5;">adityasonavane9860@gmail.com</p>
+    <p class="clock" id="liveClock"></p>
+
+    <div class="grid grid-2">
+      <section class="card">
+        <h2>Add Daily Expense</h2>
+        <form id="expenseForm">
+          <p id="editTag" class="tag-edit">You are editing an existing record.</p>
+          <div class="form-row">
+            <div class="full">
+              <label for="dateTime">Date & Time</label>
+              <input type="datetime-local" id="dateTime" required />
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="amount">Amount (Rs)</label>
+              <input type="number" id="amount" min="0.01" step="0.01" placeholder="e.g. 250" required />
+            </div>
+            <div>
+              <label for="category">Category</label>
+              <select id="category" required>
+                <option value="">Select category</option>
+                <option>Invested</option>
+                <option>Food Bill</option>
+                <option>Traveling Bill</option>
+                <option>Room Rent</option>
+                <option>Water Rent</option>
+                <option>Light Bill</option>
+                <option>Company Expenses</option>
+                <option>Other</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-row">
+            <div>
+              <label for="note">Note</label>
+              <input type="text" id="note" maxlength="60" placeholder="optional note" />
+            </div>
+            <div></div>
+          </div>
+
+          <div class="form-actions full">
+            <button id="submitBtn" class="btn" type="submit">Add Expense</button>
+            <button id="cancelEditBtn" class="btn btn-secondary" type="button">Cancel Edit</button>
+          </div>
+        </form>
+      </section>
+
+      <section class="card">
+        <h2>Month-End Report</h2>
+        <div class="month-filter">
+          <div>
+            <label for="filterMonth">Month</label>
+            <select id="filterMonth"></select>
+          </div>
+          <div>
+            <label for="filterYear">Year</label>
+            <select id="filterYear"></select>
+          </div>
+          <button id="resetCurrentMonth" class="btn" type="button">Current</button>
+        </div>
+        <div class="month-actions">
+          <button id="exportMonthPdfBtn" class="btn btn-warning" type="button">Export Month PDF</button>
+        </div>
+
+        <div class="stats">
+          <div class="stat-box">
+            <div class="stat-title">Total Entries</div>
+            <div class="stat-value" id="totalEntries">0</div>
+          </div>
+          <div class="stat-box">
+            <div class="stat-title">Month Total</div>
+            <div class="stat-value" id="monthTotal">Rs 0.00</div>
+          </div>
+        </div>
+
+        <ul id="categorySummary" class="category-list"></ul>
+        <p id="summaryEmpty" class="muted">No data for selected month.</p>
+      </section>
+    </div>
+
+    <section class="card" style="margin-top: 16px;">
+      <h2>All Records</h2>
+      <p class="muted">Data is saved in your browser. For extra safety, download backup regularly.</p>
+      <div class="backup-actions">
+        <button id="downloadBackupBtn" class="btn btn-warning" type="button">Download Backup</button>
+        <button id="restoreBackupBtn" class="btn btn-secondary" type="button">Restore Backup</button>
+      </div>
+      <input id="backupFileInput" type="file" accept=".json,application/json" hidden />
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th>Category</th>
+              <th>Note</th>
+              <th class="right">Amount (Rs)</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="recordsBody"></tbody>
+        </table>
+      </div>
+    </section>
+  </div>
+
+  <script id="embeddedExpensesData" type="application/json">
+    {
+      "records": []
+    }
+  </script>
+
+  <script>
+    const STORAGE_KEY = "hisab_expenses_v1";
+    const EMBEDDED_DATA_SCRIPT_ID = "embeddedExpensesData";
+    const MONTHS = [
+      "January", "February", "March", "April", "May", "June",
+      "July", "August", "September", "October", "November", "December"
+    ];
+
+    const form = document.getElementById("expenseForm");
+    const dateTimeInput = document.getElementById("dateTime");
+    const amountInput = document.getElementById("amount");
+    const categoryInput = document.getElementById("category");
+    const noteInput = document.getElementById("note");
+    const submitBtn = document.getElementById("submitBtn");
+    const cancelEditBtn = document.getElementById("cancelEditBtn");
+    const editTag = document.getElementById("editTag");
+    const liveClock = document.getElementById("liveClock");
+    const downloadBackupBtn = document.getElementById("downloadBackupBtn");
+    const restoreBackupBtn = document.getElementById("restoreBackupBtn");
+    const backupFileInput = document.getElementById("backupFileInput");
+
+    const recordsBody = document.getElementById("recordsBody");
+    const filterMonth = document.getElementById("filterMonth");
+    const filterYear = document.getElementById("filterYear");
+    const resetCurrentMonthBtn = document.getElementById("resetCurrentMonth");
+    const exportMonthPdfBtn = document.getElementById("exportMonthPdfBtn");
+
+    const totalEntriesEl = document.getElementById("totalEntries");
+    const monthTotalEl = document.getElementById("monthTotal");
+    const categorySummaryEl = document.getElementById("categorySummary");
+    const summaryEmptyEl = document.getElementById("summaryEmpty");
+
+    let expenses = loadExpenses();
+    let editingId = null;
+
+    initClock();
+    initDateTimeAndFilters();
+    setEditMode(false);
+    renderAll();
+
+    form.addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const dateTime = dateTimeInput.value;
+      const amount = Number(amountInput.value);
+      const category = categoryInput.value;
+      const note = noteInput.value.trim();
+
+      if (!dateTime || !category || Number.isNaN(amount) || amount <= 0) {
+        alert("Please fill valid date-time, amount, and category.");
+        return;
+      }
+
+      if (editingId) {
+        const index = expenses.findIndex((item) => item.id === editingId);
+        if (index !== -1) {
+          expenses[index] = {
+            ...expenses[index],
+            dateTime,
+            amount,
+            category,
+            note
+          };
+        }
+      } else {
+        expenses.push({
+          id: crypto.randomUUID(),
+          dateTime,
+          amount,
+          category,
+          note
+        });
+      }
+
+      saveExpenses(expenses);
+      resetForm();
+      renderAll();
+    });
+
+    recordsBody.addEventListener("click", (e) => {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+
+      const id = target.getAttribute("data-id");
+      if (!id) return;
+
+      if (target.classList.contains("btn-edit")) {
+        const item = expenses.find((entry) => entry.id === id);
+        if (!item) return;
+        startEdit(item);
+        return;
+      }
+
+      if (!target.classList.contains("btn-delete")) return;
+
+
+      const ok = confirm("Delete this record?");
+      if (!ok) return;
+
+      expenses = expenses.filter((item) => item.id !== id);
+      saveExpenses(expenses);
+      if (editingId === id) {
+        resetForm();
+      }
+      renderAll();
+    });
+
+    filterMonth.addEventListener("change", renderSummary);
+    filterYear.addEventListener("change", renderSummary);
+    resetCurrentMonthBtn.addEventListener("click", () => {
+      const now = new Date();
+      filterMonth.value = String(now.getMonth());
+      filterYear.value = String(now.getFullYear());
+      renderSummary();
+    });
+    exportMonthPdfBtn.addEventListener("click", exportSelectedMonthPdf);
+    downloadBackupBtn.addEventListener("click", downloadBackup);
+    restoreBackupBtn.addEventListener("click", () => backupFileInput.click());
+    backupFileInput.addEventListener("change", restoreBackupFromFile);
+    cancelEditBtn.addEventListener("click", resetForm);
+
+    function initClock() {
+      updateClock();
+      setInterval(updateClock, 1000);
+    }
+
+    function updateClock() {
+      const now = new Date();
+      liveClock.textContent = now.toLocaleString("en-IN", {
+        weekday: "long",
+        day: "2-digit",
+        month: "long",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+        hour12: true
+      });
+    }
+
+    function initDateTimeAndFilters() {
+      dateTimeInput.value = getNowDateTimeLocal();
+
+      filterMonth.innerHTML = MONTHS.map((month, index) =>
+        `<option value="${index}">${month}</option>`
+      ).join("");
+
+      const years = getYearOptions();
+      filterYear.innerHTML = years.map((year) =>
+        `<option value="${year}">${year}</option>`
+      ).join("");
+
+      const now = new Date();
+      filterMonth.value = String(now.getMonth());
+      filterYear.value = String(now.getFullYear());
+    }
+
+    function getYearOptions() {
+      const currentYear = new Date().getFullYear();
+      const yearSet = new Set(expenses.map((item) => getEntryDate(item).getFullYear()));
+      yearSet.add(currentYear);
+      return [...yearSet].sort((a, b) => b - a);
+    }
+
+    function renderAll() {
+      renderTable();
+      updateYearIfNeeded();
+      renderSummary();
+    }
+
+    function updateYearIfNeeded() {
+      const oldYear = filterYear.value;
+      const years = getYearOptions();
+      filterYear.innerHTML = years.map((year) =>
+        `<option value="${year}">${year}</option>`
+      ).join("");
+      if (years.includes(Number(oldYear))) {
+        filterYear.value = oldYear;
+      }
+    }
+
+    function renderTable() {
+      if (!expenses.length) {
+        recordsBody.innerHTML = `<tr><td class="empty" colspan="5">No records yet.</td></tr>`;
+        return;
+      }
+
+      const sorted = [...expenses].sort((a, b) => getEntryDate(b) - getEntryDate(a));
+      recordsBody.innerHTML = sorted.map((item) => `
+        <tr>
+          <td>${formatDateTime(item.dateTime || item.date)}</td>
+          <td>${escapeHtml(item.category)}</td>
+          <td>${escapeHtml(item.note || "-")}</td>
+          <td class="right">${formatMoney(item.amount)}</td>
+          <td>
+            <button type="button" class="action-btn btn-edit" data-id="${item.id}">Edit</button>
+            <button type="button" class="btn-danger btn-delete" data-id="${item.id}">Delete</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function renderSummary() {
+      const selectedMonth = Number(filterMonth.value);
+      const selectedYear = Number(filterYear.value);
+      const monthItems = getMonthItems(selectedMonth, selectedYear);
+
+      const grouped = {};
+      for (const item of monthItems) {
+        grouped[item.category] = (grouped[item.category] || 0) + item.amount;
+      }
+
+      const categoryTotals = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+      const monthTotal = monthItems.reduce((sum, item) => sum + item.amount, 0);
+
+      totalEntriesEl.textContent = String(monthItems.length);
+      monthTotalEl.textContent = `Rs ${formatMoney(monthTotal)}`;
+
+      if (!categoryTotals.length) {
+        categorySummaryEl.innerHTML = "";
+        summaryEmptyEl.style.display = "block";
+        return;
+      }
+
+      summaryEmptyEl.style.display = "none";
+      categorySummaryEl.innerHTML = categoryTotals.map(([cat, total]) => `
+        <li>
+          <span>${escapeHtml(cat)}</span>
+          <strong>Rs ${formatMoney(total)}</strong>
+        </li>
+      `).join("");
+    }
+
+    function getMonthItems(selectedMonth, selectedYear) {
+      return expenses.filter((item) => {
+        const d = getEntryDate(item);
+        return d.getMonth() === selectedMonth && d.getFullYear() === selectedYear;
+      });
+    }
+
+    function loadExpenses() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data)) return sanitizeExpenseList(data);
+        }
+
+        // Fallback: read initial JSON stored inside this same HTML file.
+        const embedded = loadEmbeddedExpenses();
+        return sanitizeExpenseList(embedded);
+      } catch {
+        return sanitizeExpenseList(loadEmbeddedExpenses());
+      }
+    }
+
+    function sanitizeExpenseList(data) {
+      if (!Array.isArray(data)) return [];
+      return data.filter((item) =>
+        item &&
+        typeof item.id === "string" &&
+        typeof item.category === "string" &&
+        typeof item.amount === "number"
+      );
+    }
+
+    function loadEmbeddedExpenses() {
+      const script = document.getElementById(EMBEDDED_DATA_SCRIPT_ID);
+      if (!script) return [];
+      try {
+        const parsed = JSON.parse(script.textContent || "{}");
+        const list = Array.isArray(parsed) ? parsed : parsed.records;
+        return Array.isArray(list) ? list : [];
+      } catch {
+        return [];
+      }
+    }
+
+    function syncEmbeddedDataInPage(value) {
+      const script = document.getElementById(EMBEDDED_DATA_SCRIPT_ID);
+      if (!script) return;
+      const payload = {
+        records: value
+      };
+      script.textContent = `\n${JSON.stringify(payload, null, 2)}\n`;
+    }
+
+    function saveExpenses(value) {
+      const clean = sanitizeExpenseList(value);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
+      syncEmbeddedDataInPage(clean);
+    }
+
+    function downloadBackup() {
+      if (!expenses.length) {
+        alert("No records to backup yet.");
+        return;
+      }
+      const backup = {
+        app: "hisab-expense-tracker",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        records: expenses
+      };
+      const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `hisab-backup-${new Date().toISOString().slice(0, 10)}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    }
+
+    async function restoreBackupFromFile(event) {
+      const input = event.target;
+      const file = input.files && input.files[0];
+      if (!file) return;
+      try {
+        const text = await file.text();
+        const parsed = JSON.parse(text);
+        const list = Array.isArray(parsed) ? parsed : parsed.records;
+        if (!Array.isArray(list)) {
+          alert("Invalid backup file.");
+          return;
+        }
+        const valid = list.filter((item) =>
+          item &&
+          typeof item.id === "string" &&
+          typeof item.category === "string" &&
+          typeof item.amount === "number" &&
+          (typeof item.dateTime === "string" || typeof item.date === "string")
+        );
+        if (!valid.length) {
+          alert("No valid records found in this backup.");
+          return;
+        }
+        const ok = confirm("Restore backup and replace current records?");
+        if (!ok) return;
+        expenses = valid;
+        saveExpenses(expenses);
+        resetForm();
+        renderAll();
+        alert("Backup restored successfully.");
+      } catch {
+        alert("Could not read backup file.");
+      } finally {
+        input.value = "";
+      }
+    }
+
+    function exportSelectedMonthPdf() {
+      const selectedMonth = Number(filterMonth.value);
+      const selectedYear = Number(filterYear.value);
+      const monthItems = getMonthItems(selectedMonth, selectedYear);
+
+      if (!monthItems.length) {
+        alert("No data available for selected month.");
+        return;
+      }
+
+      const monthName = MONTHS[selectedMonth];
+      const grouped = {};
+      for (const item of monthItems) {
+        grouped[item.category] = (grouped[item.category] || 0) + item.amount;
+      }
+      const categoryTotals = Object.entries(grouped).sort((a, b) => b[1] - a[1]);
+      const monthTotal = monthItems.reduce((sum, item) => sum + item.amount, 0);
+      const sortedItems = [...monthItems].sort((a, b) => getEntryDate(a) - getEntryDate(b));
+
+      const reportRows = sortedItems.map((item, idx) => `
+        <tr>
+          <td>${idx + 1}</td>
+          <td>${escapeHtml(formatDateTime(item.dateTime || item.date))}</td>
+          <td>${escapeHtml(item.category)}</td>
+          <td>${escapeHtml(item.note || "-")}</td>
+          <td style="text-align:right;">Rs ${formatMoney(item.amount)}</td>
+        </tr>
+      `).join("");
+
+      const categoryRows = categoryTotals.map(([category, total]) => `
+        <tr>
+          <td>${escapeHtml(category)}</td>
+          <td style="text-align:right;">Rs ${formatMoney(total)}</td>
+        </tr>
+      `).join("");
+
+      const popup = window.open("", "_blank", "width=900,height=700");
+      if (!popup) {
+        alert("Popup blocked. Please allow popups to export PDF.");
+        return;
+      }
+
+      popup.document.write(`
+        <!DOCTYPE html>
+        <html>
+        <head>
+          <meta charset="UTF-8" />
+          <title>Hisab Report - ${monthName} ${selectedYear}</title>
+          <style>
+            body { font-family: Arial, sans-serif; color: #111; padding: 24px; }
+            h1 { margin: 0 0 4px; }
+            .muted { color: #555; margin: 0 0 16px; }
+            .stats { margin: 10px 0 16px; font-size: 14px; }
+            table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+            th, td { border: 1px solid #ddd; padding: 8px; font-size: 12px; }
+            th { background: #f5f5f5; text-align: left; }
+            .section-title { margin-top: 18px; font-size: 16px; }
+          </style>
+        </head>
+        <body>
+          <h1>Hisab Monthly Report</h1>
+          <p class="muted">${monthName} ${selectedYear}</p>
+          <div class="stats"><strong>Total Entries:</strong> ${monthItems.length} &nbsp; | &nbsp; <strong>Month Total:</strong> Rs ${formatMoney(monthTotal)}</div>
+
+          <h2 class="section-title">Category Summary</h2>
+          <table>
+            <thead>
+              <tr><th>Category</th><th style="text-align:right;">Total</th></tr>
+            </thead>
+            <tbody>${categoryRows}</tbody>
+          </table>
+
+          <h2 class="section-title">All Records</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>#</th>
+                <th>Date & Time</th>
+                <th>Category</th>
+                <th>Note</th>
+                <th style="text-align:right;">Amount</th>
+              </tr>
+            </thead>
+            <tbody>${reportRows}</tbody>
+          </table>
+        </body>
+        </html>
+      `);
+      popup.document.close();
+      popup.focus();
+      popup.print();
+    }
+
+    function formatMoney(value) {
+      return Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+      });
+    }
+
+    function formatDate(dateValue) {
+      const d = new Date(dateValue);
+      const day = String(d.getDate()).padStart(2, "0");
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const year = d.getFullYear();
+      return `${day}-${month}-${year}`;
+    }
+
+    function formatDateTime(dateValue) {
+      const d = new Date(dateValue);
+      if (Number.isNaN(d.getTime())) return "-";
+      const datePart = formatDate(d);
+      const hour = String(d.getHours()).padStart(2, "0");
+      const min = String(d.getMinutes()).padStart(2, "0");
+      return `${datePart} ${hour}:${min}`;
+    }
+
+    function getNowDateTimeLocal() {
+      const d = new Date();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hour = String(d.getHours()).padStart(2, "0");
+      const min = String(d.getMinutes()).padStart(2, "0");
+      return `${d.getFullYear()}-${month}-${day}T${hour}:${min}`;
+    }
+
+    function getEntryDate(item) {
+      const d = new Date(item.dateTime || item.date);
+      if (!Number.isNaN(d.getTime())) return d;
+      return new Date();
+    }
+
+    function setEditMode(enabled) {
+      if (enabled) {
+        submitBtn.textContent = "Update Expense";
+        cancelEditBtn.style.display = "inline-block";
+        editTag.style.display = "block";
+      } else {
+        submitBtn.textContent = "Add Expense";
+        cancelEditBtn.style.display = "none";
+        editTag.style.display = "none";
+      }
+    }
+
+    function startEdit(item) {
+      editingId = item.id;
+      dateTimeInput.value = toDateTimeLocalValue(item.dateTime || item.date);
+      amountInput.value = String(item.amount);
+      categoryInput.value = item.category;
+      noteInput.value = item.note || "";
+      setEditMode(true);
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    function resetForm() {
+      form.reset();
+      editingId = null;
+      dateTimeInput.value = getNowDateTimeLocal();
+      setEditMode(false);
+    }
+
+    function toDateTimeLocalValue(dateValue) {
+      const d = new Date(dateValue);
+      if (Number.isNaN(d.getTime())) return getNowDateTimeLocal();
+      const month = String(d.getMonth() + 1).padStart(2, "0");
+      const day = String(d.getDate()).padStart(2, "0");
+      const hour = String(d.getHours()).padStart(2, "0");
+      const min = String(d.getMinutes()).padStart(2, "0");
+      return `${d.getFullYear()}-${month}-${day}T${hour}:${min}`;
+    }
+
+    function escapeHtml(text) {
+      return String(text)
+        .replaceAll("&", "&amp;")
+        .replaceAll("<", "&lt;")
+        .replaceAll(">", "&gt;")
+        .replaceAll('"', "&quot;")
+        .replaceAll("'", "&#39;");
+    }
+  </script>
+</body>
+</html>
