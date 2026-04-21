@@ -400,7 +400,8 @@
     <p class="subtitle" style="color: #4f46e5;">adityasonavane9860@gmail.com</p>
     <p class="clock" id="liveClock"></p>
 
-    <div class="grid grid-2">
+    <div class="grid">
+
       <section class="card">
         <h2>Add Daily Expense</h2>
         <form id="expenseForm">
@@ -428,6 +429,13 @@
                 <option>Water Rent</option>
                 <option>Light Bill</option>
                 <option>Company Expenses</option>
+                <option>Medical</option>
+                <option>Kirana</option>
+                <option>Future Credit</option>
+                <option>Future Debit</option>
+                <option>Electronics</option>
+                <option>Hobbies</option>
+                <option>Recharge</option>
                 <option>Other</option>
               </select>
             </div>
@@ -440,6 +448,7 @@
             </div>
             <div></div>
           </div>
+
 
           <div class="form-actions full">
             <button id="submitBtn" class="btn" type="submit">Add Expense</button>
@@ -466,7 +475,11 @@
           <button id="exportMonthPdfBtn" class="btn btn-warning" type="button">Export Month PDF</button>
         </div>
 
-        <div class="stats">
+<div class="stats">
+          <div class="stat-box">
+            <div class="stat-title">Current Balance</div>
+            <div class="stat-value" id="currentBalance">Rs 0.00</div>
+          </div>
           <div class="stat-box">
             <div class="stat-title">Total Entries</div>
             <div class="stat-value" id="totalEntries">0</div>
@@ -505,6 +518,36 @@
         </table>
       </div>
     </section>
+
+    <section class="card" style="margin-top: 16px;">
+      <h2>Balance Management</h2>
+      <div class="form-row">
+        <div class="full">
+          <label for="balanceInput">Balance (Rs)</label>
+          <input type="number" id="balanceInput" step="0.01" placeholder="Enter balance" />
+        </div>
+      </div>
+      <div class="form-row">
+        <div class="full">
+          <label for="balanceNote">Note (optional)</label>
+          <input type="text" id="balanceNote" maxlength="60" placeholder="e.g. Salary received" />
+        </div>
+      </div>
+      <button id="updateBalanceBtn" class="btn full" type="button">Update Balance</button>
+      <div class="table-wrap" style="margin-top: 16px;">
+        <table>
+          <thead>
+            <tr>
+              <th>Date & Time</th>
+              <th class="right">Balance (Rs)</th>
+              <th>Note</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="balanceHistoryBody"></tbody>
+        </table>
+      </div>
+    </section>
   </div>
 
   <script id="embeddedExpensesData" type="application/json">
@@ -514,7 +557,9 @@
   </script>
 
   <script>
-    const STORAGE_KEY = "hisab_expenses_v1";
+const STORAGE_KEY = "hisab_expenses_v1";
+const BALANCE_KEY = "hisab_balance_v1";
+    const BALANCE_HISTORY_KEY = "hisab_balance_history_v1";
     const EMBEDDED_DATA_SCRIPT_ID = "embeddedExpensesData";
     const REPORT_CATEGORIES = [
       "Invested",
@@ -524,6 +569,13 @@
       "Water Rent",
       "Light Bill",
       "Company Expenses",
+      "Medical",
+      "Kirana",
+      "Future Credit",
+      "Future Debit",
+      "Electronics",
+      "Hobbies",
+      "Recharge",
       "Other"
     ];
     const MONTHS = [
@@ -553,14 +605,24 @@
 
     const totalEntriesEl = document.getElementById("totalEntries");
     const monthTotalEl = document.getElementById("monthTotal");
+    const currentBalanceEl = document.getElementById("currentBalance");
     const categorySummaryEl = document.getElementById("categorySummary");
     const summaryEmptyEl = document.getElementById("summaryEmpty");
 
-    let expenses = loadExpenses();
-    let editingId = null;
+let expenses = loadExpenses();
+let editingId = null;
+    let editingBalanceId = null;
+    let currentBalance = 0;
+    let editOldAmount = null;
+    let editOldBalance = null;
+    let balanceHistory = [];
 
     initClock();
     initDateTimeAndFilters();
+    currentBalance = loadBalance();
+    balanceHistory = loadBalanceHistory();
+    updateBalanceDisplay();
+    renderBalanceHistory();
     setEditMode(false);
     renderAll();
 
@@ -580,6 +642,12 @@
       if (editingId) {
         const index = expenses.findIndex((item) => item.id === editingId);
         if (index !== -1) {
+          const oldAmount = editOldAmount || expenses[index].amount;
+          const amountDiff = oldAmount - amount;
+          currentBalance += amountDiff;
+          addBalanceHistoryEntry(currentBalance, `Edit expense: ${amountDiff > 0 ? '+' : ''}${formatMoney(Math.abs(amountDiff))} (${category})`);
+          saveBalance(currentBalance);
+
           expenses[index] = {
             ...expenses[index],
             dateTime,
@@ -589,6 +657,10 @@
           };
         }
       } else {
+        currentBalance -= amount;
+        addBalanceHistoryEntry(currentBalance, `Expense: ${category} - Rs ${formatMoney(amount)}`);
+        saveBalance(currentBalance);
+
         expenses.push({
           id: crypto.randomUUID(),
           dateTime,
@@ -601,6 +673,7 @@
       saveExpenses(expenses);
       resetForm();
       renderAll();
+      updateBalanceDisplay();
     });
 
     recordsBody.addEventListener("click", (e) => {
@@ -645,6 +718,63 @@
     backupFileInput.addEventListener("change", restoreBackupFromFile);
     cancelEditBtn.addEventListener("click", resetForm);
 
+    document.getElementById("updateBalanceBtn").addEventListener("click", updateManualBalance);
+
+    // Balance history event delegation
+    document.addEventListener('click', function(e) {
+      const target = e.target;
+      if (!(target instanceof HTMLElement)) return;
+      const balanceBody = document.getElementById('balanceHistoryBody');
+      if (!balanceBody || !balanceBody.contains(target)) return;
+      const id = target.getAttribute('data-id');
+      if (!id) return;
+      if (target.classList.contains('btn-edit')) {
+        const item = balanceHistory.find(entry => entry.id === id);
+        if (item) startBalanceEdit(item);
+      } else if (target.classList.contains('btn-danger')) {
+        if (confirm('Delete this balance entry? Current balance will be recalculated.')) {
+          deleteBalanceEntry(id);
+        }
+      }
+    });
+
+
+
+    function deleteBalanceEntry(id) {
+      const index = balanceHistory.findIndex(entry => entry.id === id);
+      if (index === -1) return;
+      balanceHistory.splice(index, 1);
+      recalculateCurrentBalance();
+      saveBalanceHistory(balanceHistory);
+      renderBalanceHistory();
+      updateBalanceDisplay();
+    }
+
+    function recalculateCurrentBalance() {
+      if (balanceHistory.length > 0) {
+        currentBalance = balanceHistory[0].balance;
+      } else {
+        currentBalance = -expenses.reduce((sum, e) => sum + e.amount, 0);
+      }
+      saveBalance(currentBalance);
+    }
+
+    function updateManualBalance() {
+      const newBalance = Number(document.getElementById("balanceInput").value);
+      const note = document.getElementById("balanceNote").value.trim();
+      if (Number.isNaN(newBalance)) {
+        alert("Please enter a valid balance amount.");
+        return;
+      }
+      addBalanceHistoryEntry(newBalance, note || "Manual update");
+      document.getElementById("balanceInput").value = "";
+      document.getElementById("balanceNote").value = "";
+    }
+
+
+
+
+
     function initClock() {
       updateClock();
       setInterval(updateClock, 1000);
@@ -687,10 +817,17 @@
     }
 
     function getYearOptions() {
+      const startYear = 2020;
       const currentYear = new Date().getFullYear();
-      const yearSet = new Set(expenses.map((item) => getEntryDate(item).getFullYear()));
-      yearSet.add(currentYear);
-      return [...yearSet].sort((a, b) => b - a);
+      const dataYears = expenses.map((item) => getEntryDate(item).getFullYear());
+      const maxYear = Math.max(currentYear, ...dataYears);
+      const years = [];
+
+      for (let year = maxYear; year >= startYear; year -= 1) {
+        years.push(year);
+      }
+
+      return years;
     }
 
     function renderAll() {
@@ -769,6 +906,17 @@
       });
     }
 
+function loadEmbeddedData() {
+      const script = document.getElementById(EMBEDDED_DATA_SCRIPT_ID);
+      if (!script) return {};
+      try {
+        const parsed = JSON.parse(script.textContent || "{}");
+        return parsed || {};
+      } catch {
+        return {};
+      }
+    }
+
     function loadExpenses() {
       try {
         const raw = localStorage.getItem(STORAGE_KEY);
@@ -778,10 +926,10 @@
         }
 
         // Fallback: read initial JSON stored inside this same HTML file.
-        const embedded = loadEmbeddedExpenses();
+        const embedded = loadEmbeddedData().records || [];
         return sanitizeExpenseList(embedded);
       } catch {
-        return sanitizeExpenseList(loadEmbeddedExpenses());
+        return sanitizeExpenseList(loadEmbeddedData().records || []);
       }
     }
 
@@ -816,21 +964,114 @@
       script.textContent = `\n${JSON.stringify(payload, null, 2)}\n`;
     }
 
-    function saveExpenses(value) {
+function saveExpenses(value) {
       const clean = sanitizeExpenseList(value);
       localStorage.setItem(STORAGE_KEY, JSON.stringify(clean));
-      syncEmbeddedDataInPage(clean);
+    syncEmbeddedDataInPage(clean);
+  }
+
+  function syncEmbeddedData(data) {
+    const script = document.getElementById(EMBEDDED_DATA_SCRIPT_ID);
+    if (!script) return;
+    const payload = {
+      ...loadEmbeddedData(),
+      ...data
+    };
+    script.textContent = `\n${JSON.stringify(payload, null, 2)}\n`;
+  }
+
+function loadBalanceHistory() {
+      try {
+        const raw = localStorage.getItem(BALANCE_HISTORY_KEY);
+        if (raw) {
+          const data = JSON.parse(raw);
+          if (Array.isArray(data)) return data;
+        }
+        return [];
+      } catch {
+        return [];
+      }
     }
 
+    function saveBalanceHistory(history) {
+      localStorage.setItem(BALANCE_HISTORY_KEY, JSON.stringify(history));
+    }
+
+    function addBalanceHistoryEntry(balanceValue, note = "") {
+      const timestamp = getNowDateTimeLocal();
+      balanceHistory.unshift({
+        id: crypto.randomUUID(),
+        timestamp,
+        balance: balanceValue,
+        note
+      });
+      currentBalance = balanceValue;
+      saveBalance(currentBalance);
+      saveBalanceHistory(balanceHistory);
+      updateBalanceDisplay();
+      renderBalanceHistory();
+    }
+
+    function renderBalanceHistory() {
+      const tbody = document.getElementById("balanceHistoryBody");
+      if (!balanceHistory.length) {
+        tbody.innerHTML = '<tr><td colspan="4" class="empty">No balance history yet.</td></tr>';
+        return;
+      }
+      const sorted = [...balanceHistory].sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+      tbody.innerHTML = sorted.map((item) => `
+        <tr>
+          <td>${formatDateTime(item.timestamp)}</td>
+          <td class="right">${formatMoney(item.balance)}</td>
+          <td>${escapeHtml(item.note || "-")}</td>
+          <td>
+            <button type="button" class="action-btn btn-edit" data-id="${item.id}">Edit</button>
+            <button type="button" class="btn-danger" data-id="${item.id}">Delete</button>
+          </td>
+        </tr>
+      `).join("");
+    }
+
+    function loadBalance() {
+      try {
+        const raw = localStorage.getItem(BALANCE_KEY);
+        if (raw !== null) {
+          const value = Number(raw);
+          if (!Number.isNaN(value)) return value;
+        }
+        // Fallback to embedded
+        const embedded = loadEmbeddedData();
+        return Number(embedded.balance) || 0;
+      } catch {
+        return 0;
+      }
+    }
+
+    function saveBalance(value) {
+      const cleanValue = Number(value) || 0;
+      localStorage.setItem(BALANCE_KEY, String(cleanValue));
+      syncEmbeddedData({ balance: cleanValue });
+    }
+
+    function updateBalanceDisplay() {
+      const balanceEl = document.getElementById("currentBalance");
+      if (balanceEl) {
+        balanceEl.textContent = `Rs ${formatMoney(currentBalance)}`;
+      }
+    }
+
+    
     function downloadBackup() {
-      if (!expenses.length) {
-        alert("No records to backup yet.");
+      if (!expenses.length && currentBalance === 0) {
+        alert("No records or balance to backup yet.");
         return;
       }
       const backup = {
         app: "hisab-expense-tracker",
         version: 1,
         exportedAt: new Date().toISOString(),
+        balance: currentBalance,
+        balanceHistory,
         records: expenses
       };
       const blob = new Blob([JSON.stringify(backup, null, 2)], { type: "application/json" });
@@ -844,7 +1085,7 @@
       URL.revokeObjectURL(url);
     }
 
-    async function restoreBackupFromFile(event) {
+async function restoreBackupFromFile(event) {
       const input = event.target;
       const file = input.files && input.files[0];
       if (!file) return;
@@ -852,6 +1093,7 @@
         const text = await file.text();
         const parsed = JSON.parse(text);
         const list = Array.isArray(parsed) ? parsed : parsed.records;
+        const historyList = parsed.balanceHistory || [];
         if (!Array.isArray(list)) {
           alert("Invalid backup file.");
           return;
@@ -863,16 +1105,19 @@
           typeof item.amount === "number" &&
           (typeof item.dateTime === "string" || typeof item.date === "string")
         );
-        if (!valid.length) {
-          alert("No valid records found in this backup.");
-          return;
-        }
-        const ok = confirm("Restore backup and replace current records?");
+        const backupBalance = Number(parsed.balance) || 0;
+        const ok = confirm(`Restore backup? Records: ${valid.length}, Balance: Rs ${formatMoney(backupBalance)}, Balance History: ${historyList.length}`);
         if (!ok) return;
         expenses = valid;
+        currentBalance = backupBalance;
+        balanceHistory = Array.isArray(historyList) ? historyList : [];
         saveExpenses(expenses);
+        saveBalanceHistory(balanceHistory);
+        saveBalance(currentBalance);
         resetForm();
         renderAll();
+        renderBalanceHistory();
+        updateBalanceDisplay();
         alert("Backup restored successfully.");
       } catch {
         alert("Could not read backup file.");
@@ -1030,22 +1275,24 @@
       }
     }
 
-    function startEdit(item) {
-      editingId = item.id;
-      dateTimeInput.value = toDateTimeLocalValue(item.dateTime || item.date);
-      amountInput.value = String(item.amount);
-      categoryInput.value = item.category;
-      noteInput.value = item.note || "";
-      setEditMode(true);
-      window.scrollTo({ top: 0, behavior: "smooth" });
-    }
+function startEdit(item) {
+  editingId = item.id;
+  editOldAmount = item.amount;
+  dateTimeInput.value = toDateTimeLocalValue(item.dateTime || item.date);
+  amountInput.value = String(item.amount);
+  categoryInput.value = item.category;
+  noteInput.value = item.note || "";
+  setEditMode(true);
+  window.scrollTo({ top: 0, behavior: "smooth" });
+}
 
-    function resetForm() {
-      form.reset();
-      editingId = null;
-      dateTimeInput.value = getNowDateTimeLocal();
-      setEditMode(false);
-    }
+function resetForm() {
+  form.reset();
+  editingId = null;
+  editOldAmount = null;
+  dateTimeInput.value = getNowDateTimeLocal();
+  setEditMode(false);
+}
 
     function toDateTimeLocalValue(dateValue) {
       const d = new Date(dateValue);
